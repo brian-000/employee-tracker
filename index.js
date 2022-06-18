@@ -42,50 +42,38 @@ const userPrompt = async () => {
 
       ],
     },
-  ])
-    .then((answers) => {
-
+  ]).then((answers) => {
       if (answers.nextSteps === "View all departments") {
         const sql = `SELECT * FROM department`;
-
         db.query(sql, (err, rows) => {
           if (err) throw err;
           console.table(rows);
-          // returns to initial prompt
-
           userPrompt();
         });
       }
       if (answers.nextSteps === 'View all roles') {
         viewAllRoles();
-
       }
       if (answers.nextSteps === 'View all employees') {
         viewAllEmployees();
       }
-
       if (answers.nextSteps === 'Add a department') {
         addADepartment();
       }
-
       if (answers.nextSteps === 'Add a role') {
         addARole();
       }
-
       if (answers.nextSteps === 'Add an employee') {
         addAnEmployee();
       }
-
       if (answers.nextSteps === 'Update employee role') {
         updateEmployeeRole();
       }
-
     })
 
 }
 
 viewAllRoles = () => {
-  // pulls role information and brings over department names from id keys
   const sql = `SELECT 
                 roles.title,
                 roles.id,
@@ -141,10 +129,8 @@ addADepartment = () => {
         }
       }
     }
-  ])
-    .then(answer => {
-      const sql = `INSERT INTO department (name)
-                  VALUES (?)`;
+  ]).then(answer => {
+      const sql = `INSERT INTO department (name) VALUES (?)`;
       db.query(sql, answer.newDepartment, (err, result) => {
         if (err) throw err;
         console.log('New Department added');
@@ -152,6 +138,64 @@ addADepartment = () => {
       });
     });
 };
+
+
+addARole = () => {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'newRole',
+      message: 'Enter name for new role.',
+      validate: newRole => {
+        if (newRole) {
+          return true;
+        } else {
+          console.log('error');
+          return false;
+        }
+      }
+    },
+    {
+      type: 'input',
+      name: 'salary',
+      message: 'Enter salary for this role.',
+      validate: salary => {
+        if (isNaN(salary)) {
+          console.log('error');
+          return false;
+        } else {
+          return true;
+        }
+      }
+    }
+  ]).then(answer => {
+      const params = [answer.newRole, answer.salary];
+      const roleSql = `SELECT name, id FROM department`;
+      db.query(roleSql, (err, data) => {
+        if (err) throw err;
+        const dept = data.map(({ name, id }) => ({ name: name, value: id }));
+        inquirer.prompt([
+          {
+            type: 'list',
+            name: 'dept',
+            message: "Enter department for new role.",
+            choices: dept
+          }
+        ]).then(deptChoice => {
+            const dept = deptChoice.dept;
+            params.push(dept);
+            const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?,?,?)`;
+            db.query(sql, params, (err, result) => {
+              if (err) throw err;
+              console.log('Successfelly added');
+              userPrompt();
+            })
+          })
+      })
+    })
+}
+
+
 
 
 
