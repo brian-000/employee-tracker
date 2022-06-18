@@ -43,33 +43,33 @@ const userPrompt = async () => {
       ],
     },
   ]).then((answers) => {
-      if (answers.nextSteps === "View all departments") {
-        const sql = `SELECT * FROM department`;
-        db.query(sql, (err, rows) => {
-          if (err) throw err;
-          console.table(rows);
-          userPrompt();
-        });
-      }
-      if (answers.nextSteps === 'View all roles') {
-        viewAllRoles();
-      }
-      if (answers.nextSteps === 'View all employees') {
-        viewAllEmployees();
-      }
-      if (answers.nextSteps === 'Add a department') {
-        addADepartment();
-      }
-      if (answers.nextSteps === 'Add a role') {
-        addARole();
-      }
-      if (answers.nextSteps === 'Add an employee') {
-        addAnEmployee();
-      }
-      if (answers.nextSteps === 'Update employee role') {
-        updateEmployeeRole();
-      }
-    })
+    if (answers.nextSteps === "View all departments") {
+      const sql = `SELECT * FROM department`;
+      db.query(sql, (err, rows) => {
+        if (err) throw err;
+        console.table(rows);
+        userPrompt();
+      });
+    }
+    if (answers.nextSteps === 'View all roles') {
+      viewAllRoles();
+    }
+    if (answers.nextSteps === 'View all employees') {
+      viewAllEmployees();
+    }
+    if (answers.nextSteps === 'Add a department') {
+      addADepartment();
+    }
+    if (answers.nextSteps === 'Add a role') {
+      addARole();
+    }
+    if (answers.nextSteps === 'Add an employee') {
+      addAnEmployee();
+    }
+    if (answers.nextSteps === 'Update employee role') {
+      updateEmployeeRole();
+    }
+  })
 
 }
 
@@ -130,13 +130,13 @@ addADepartment = () => {
       }
     }
   ]).then(answer => {
-      const sql = `INSERT INTO department (name) VALUES (?)`;
-      db.query(sql, answer.newDepartment, (err, result) => {
-        if (err) throw err;
-        console.log('New Department added');
-        userPrompt();
-      });
+    const sql = `INSERT INTO department (name) VALUES (?)`;
+    db.query(sql, answer.newDepartment, (err, result) => {
+      if (err) throw err;
+      console.log('New Department added');
+      userPrompt();
     });
+  });
 };
 
 
@@ -169,31 +169,105 @@ addARole = () => {
       }
     }
   ]).then(answer => {
-      const params = [answer.newRole, answer.salary];
-      const roleSql = `SELECT name, id FROM department`;
-      db.query(roleSql, (err, data) => {
-        if (err) throw err;
-        const dept = data.map(({ name, id }) => ({ name: name, value: id }));
-        inquirer.prompt([
-          {
-            type: 'list',
-            name: 'dept',
-            message: "Enter department for new role.",
-            choices: dept
-          }
-        ]).then(deptChoice => {
-            const dept = deptChoice.dept;
-            params.push(dept);
-            const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?,?,?)`;
-            db.query(sql, params, (err, result) => {
-              if (err) throw err;
-              console.log('Successfelly added');
-              userPrompt();
-            })
-          })
+    const params = [answer.newRole, answer.salary];
+    const roleSql = `SELECT name, id FROM department`;
+    db.query(roleSql, (err, data) => {
+      if (err) throw err;
+      const dept = data.map(({ name, id }) => ({ name: name, value: id }));
+      inquirer.prompt([
+        {
+          type: 'list',
+          name: 'dept',
+          message: "Enter department for new role.",
+          choices: dept
+        }
+      ]).then(deptChoice => {
+        const dept = deptChoice.dept;
+        params.push(dept);
+        const sql = `INSERT INTO roles (title, salary, department_id) VALUES (?,?,?)`;
+        db.query(sql, params, (err, result) => {
+          if (err) throw err;
+          console.log('Successfelly added');
+          userPrompt();
+        })
       })
     })
+  })
 }
+
+addAnEmployee = () => {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'employeeFirstName',
+      message: `Enter employees first name.`,
+      validate: employeeFirstName => {
+        if (employeeFirstName) {
+          return true;
+        } else {
+          console.log('error');
+          return false;
+        }
+      }
+    },
+    {
+      type: 'input',
+      name: 'employeeLastName',
+      message: `Enter employees last name`,
+      validate: employeeLastName => {
+        if (employeeLastName) {
+          return true;
+        } else {
+          console.log('error');
+          return false;
+        }
+      }
+    }
+  ]).then(answer => {
+    const employeeData = [answer.employeeFirstName, answer.employeeLastName]
+    const updatedRole = `SELECT roles.id, roles.title FROM roles`;
+    db.query(updatedRole, (error, data) => {
+      if (error) throw error;
+      const roles = data.map( ( {id, title} ) => ( {name: title, value: id } ) );
+      inquirer.prompt([
+        {
+          type: 'list',
+          name: 'employeeRole',
+          message: "enter employees role.",
+          choices: roles
+        }
+      ]).then(roleChoice => {
+        const chosenRole = roleChoice.role;
+        employeeData.push(chosenRole);
+        const updateManager = `SELECT * FROM employees`;
+        db.query(updateManager, (error, data) => {
+          if (error) throw error;
+          // gets managers from employee list
+          const managers = data.map( ( {id, first_name, last_name} ) => ( { name: first_name + " " + last_name, value: id} ) );
+          inquirer.prompt([
+            {
+              type: 'list',
+              name: 'manager',
+              message: "Enter employees manager",
+              choices: managers
+            }
+          ]).then(managerChoice => {
+            const chosenManager = managerChoice.manager;
+            // pushes manager info into array containing new employee info
+            employeeData.push(chosenManager);
+            const sql = `INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`;
+            db.query(sql, employeeData, (error) => {
+              if (error) throw error;
+              console.log("Employee successfully added.")
+              userPrompt();
+            });
+          });
+        });
+      });
+    });
+  });
+};;
+
 
 
 
