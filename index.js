@@ -266,7 +266,54 @@ addAnEmployee = () => {
       });
     });
   });
-};;
+};
+
+
+updateEmployeeRole = () => {
+  const newEmployeeSql = `SELECT * FROM employees`;
+  db.query(newEmployeeSql, (err, data) => {
+    if (err) throw err;
+  const employees = data.map( ( {id, first_name, last_name} ) => ( {name: first_name + " " + last_name, value: id} ) );
+  inquirer.prompt([
+    {
+      type: 'list',
+      name: 'name',
+      message: "Choose an employee to change",
+      choices: employees
+    }
+  ])
+    .then(employeeUpdate => {
+      const employee = employeeUpdate.name;
+      const params = [];
+      params.push(employee)
+      const roleSql = `SELECT * FROM roles`;
+      db.query(roleSql, (err, data) => {
+        if (err) throw err;
+        const roles = data.map(({ id, title }) => ({ name: title, value: id }));
+        inquirer.prompt([
+          {
+            type: 'list',
+            name: 'role',
+            message: "Enter employees new role",
+            choices: roles
+          }
+        ]).then(roleChoice => {
+            const role = roleChoice.role;
+            params.push(role);
+            let employee = params[0]
+            params[0] = role
+            params[1] = employee
+            const sql = `UPDATE employees SET role_id = ? WHERE id = ?`;
+            db.query(sql, params, (err, result) => {
+              if (err) throw err;
+              console.log("Employee is updated");
+              userPrompt();
+            });
+          });
+      });
+    });
+  });
+};
 
 
 
