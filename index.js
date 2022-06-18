@@ -126,6 +126,33 @@ viewAllEmployees = () => {
 
 };
 
+addADepartment = () => {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'newDepartment',
+      message: `What's the name of the new Department?`,
+      validate: newDepartment => {
+        if (newDepartment) {
+          return true;
+        } else {
+          console.log('Error');
+          return false;
+        }
+      }
+    }
+  ])
+    .then(answer => {
+      const sql = `INSERT INTO department (name)
+                  VALUES (?)`;
+      db.query(sql, answer.newDepartment, (err, result) => {
+        if (err) throw err;
+        console.log('New Department added');
+        userPrompt();
+      });
+    });
+};
+
 
 
 /*
